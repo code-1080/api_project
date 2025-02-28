@@ -36,7 +36,7 @@ if __name__ == "__main__":
     w, h = input("Введите координаты места: ").split()
     spn = input("Введите масштаб: ").split()
 
-    screen = pygame.display.set_mode(size)
+    screen = pygame.display.set_mode(size, pygame.NOFRAME)
 
     server = 'https://static-maps.yandex.ru/v1'
 
@@ -68,6 +68,10 @@ if __name__ == "__main__":
     point = None
     point_coords = None
 
+
+    max_spn = 70
+    min_spn = 0.01
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -85,11 +89,33 @@ if __name__ == "__main__":
                         img = pygame.image.load(show_map(params=params, server=server))
             place_input.input(event)
 
-        if pygame.key.get_pressed()[pygame.K_RETURN]:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RETURN]:
             search_params["geocode"] = place_input.text
-            img = pygame.image.load(find_object(search_server=search_server, search_params=search_params))
-            point = pygame.transform.scale(pygame.image.load('Map-Pin.png'), (10, 20))
-            point_coords = (size[0] // 2 - 5, (size[1] - 50) // 2 - 20)
+            new_map = find_object(search_server=search_server, search_params=search_params)
+            if new_map:
+                img = pygame.image.load(new_map)
+                point = pygame.transform.scale(pygame.image.load('Map-Pin.png'), (10, 20))
+                point_coords = (size[0] // 2 - 5, (size[1] - 50) // 2 - 20)
+
+        # Обработка изменения масштаба
+        temp_spn = params["spn"].split(",") # промежуточный масштаб для рассчета
+        if keys[pygame.K_PAGEUP]:
+            temp_spn[0] = str(max(float(temp_spn[0]) / 2, min_spn))
+            temp_spn[1] = str(max(float(temp_spn[1]) / 2, min_spn))
+            params["spn"] = ",".join(temp_spn)
+            new_map = show_map(params=params, server=server)
+            if new_map:
+                img = pygame.image.load(new_map)
+
+        if keys[pygame.K_PAGEDOWN]:
+            temp_spn[0] = str(min(float(temp_spn[0]) * 2, max_spn))
+            temp_spn[1] = str(min(float(temp_spn[1]) * 2, max_spn))
+            params["spn"] = ",".join(temp_spn)
+            new_map = show_map(params=params, server=server)
+            if new_map:
+                img = pygame.image.load(new_map)
+
 
         screen.fill((255, 255, 255))
         screen.blit(img, (0, 0))
